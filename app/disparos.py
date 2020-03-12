@@ -6,9 +6,9 @@
 # Data 11.03.2020                           #
 # Uso,                                      #
 # tags: localhost, BasicAuth, keys, json    #
-# -verbose (debuga os passos e o tempo)
-# - tempo (apresenta o tempo)
-# - Relatorios: /var/log/sistema/email_mkt.log
+# -verbose (debuga os passos e o tempo)     #
+# -tempo (apresenta o tempo)                #
+# Relatorios: /var/log/sistema/email_mkt.log #
 #
 #
 ###########################################

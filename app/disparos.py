@@ -34,11 +34,11 @@ class Disparos:
         self.__inicio = time.time()
         self.__args = args
         self.__uteis = Uteis(args)
+        self.__cidades = Cidades(args)
 
     @property
     def args(self):
         return self.__args
-
 
     def set(self):
         contatos = Contatos(self.args)
@@ -47,59 +47,12 @@ class Disparos:
             for contato in contatos.itens:
                 self.processa_item(contato)
 
-
-
-
-
-
-
-        # if len(contatos) > 0:
-        #     for contato in contatos:
-        #         processou = self.processa_item(contato)
-        #         if processou:
-        #             totais['ok'] += 1
-        #         else:
-        #             totais['error'] += 1
-
-
     def processa_item(self,contato):
-        cidade = self.get_cidades(contato['cidades'])
-        filtro = ''
-        imovel = self.get_imoveis()
-        return True
-
-    def set_filtro(self,contato):
-        pass
-
-    def get_imoveis(self,filtro):
-        pass
+        self.__cidades.set_cidades(contato['ids'])
+        imoveis = Imoveis(self.__args, contato, self.__cidades)
 
 
-    def get_cidades(self,ids):
-        cidade = {}
-        ids_ = tuple(map(int, ids.split(',')))
-        if ids_[0] in self.cidades:
-            cidade = self.cidades[ids_[0]]
-        else:
-            cidade = self.set_cidades(ids)
-        return cidade
 
-
-    def set_cidades(self,ids):
-        data = {'filtro': {}}
-        data['filtro']['ids'] = ids
-        data['url_tipo'] = 'cidades_in'
-        data['tipo'] = 'get'
-        cidades = self.request(data)
-        self.cidades[cidades[0]['id']] = {
-                'logo': cidades[0]['topo'],
-                'titulo':cidades[0]['nome'],
-                'link':cidades[0]['link'],
-                'portal':cidades[0]['portal']
-        }
-        return self.cidades[cidades[0]['id']]
-
-    cidades = {}
 
     def get_message(self, contato):
         data = {}
@@ -130,8 +83,7 @@ class Contatos:
         data['url_tipo'] = 'contatos'
         data['tipo'] = 'get'
         self.__contatos = Request(self.__uteis).request(data)
-        print(self.contatos)
-        if self.contatos:
+        if self.itens:
             return True
         else:
             message = 'Nenhum contato retornado'
@@ -165,11 +117,58 @@ class Contatos:
         Logs(data)
 
 class Cidades:
-    def __init__(self):
-        pass
+    def __init__(self, args):
+        self.__args = args
+        self.__uteis = Uteis(args)
+        self.__cidades = {}
+
+    @property
+    def itens(self):
+        return self.__cidades
+
+    def set_cidades(self,ids):
+        ids_ = tuple(map(int, ids.split(',')))
+        if ids_[0] in self.itens:
+            return True
+        return self.get_cidades(ids)
+
+
+    def get_cidades(self,ids):
+        data = {'filtro': {}}
+        data['filtro']['ids'] = ids
+        data['url_tipo'] = 'cidades_in'
+        data['tipo'] = 'get'
+        cidades = Request(self.__uteis).request(data)
+        if len(cidades):
+            for cidade in cidades:
+                self.__cidades[cidade['id']] = {
+                    'logo': cidade['topo'],
+                    'titulo':cidade['nome'],
+                    'link':cidade['link'],
+                    'portal':cidade['portal']
+                }
+            if len(cidades) != len(ids.split(',')):
+                message = 'Uma ou mais cidades não encontradas com os ids: {}'.format(ids)
+                self.log_error(message)
+            return True
+        message = 'Nenhuma cidade encontrada com os ids: {}'.format(ids)
+        self.log_error(message)
+        return False
+
+    def log_error(self, message):
+        data = {
+            'formato': 'cidades_erro',
+            'arquivo': 'erro',
+            'data':{
+                'data':datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                'message':message
+            }
+        }
+        Logs(data)
 
 class Imoveis:
-    def __init__(self):
+    def __init__(self, args, contato, cidades):
+
         pass
 
 class Email:

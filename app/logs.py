@@ -23,6 +23,7 @@ class Logs:
             'disparos': '{data} - status_code {status_code} - qtde: {qtde} - funcao: disparos_totais - tempo: {tempo} ',
             'email' : '{data} - status_code {status_code} - id_cadastro: {id_cadastro} - imoveis: {imoveis} - funcao: email_individual - tempo: {tempo} ',
             'log_erro': '{data} - message {message} - erro_log ',
+            'cidades_erro': '{data} - message {message} - erro_cidades ',
         }
         if data['tipo'] == 'arquivo':
             try:

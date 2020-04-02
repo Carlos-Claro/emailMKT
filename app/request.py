@@ -102,7 +102,10 @@ class Request:
         i = {}
         print(status_code)
         if 200 <= status_code <= 299:
-            i = itens.json()
+            if status_code == 204:
+                i = {}
+            else:
+                i = itens.json()
             self.set_data_log('qtde', len(i))
         else:
             message = 'Problemas na conexão, {} {}'.format(data['url_tipo'], url)

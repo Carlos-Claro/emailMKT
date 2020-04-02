@@ -15,169 +15,166 @@
 
 # -*- coding: utf-8 -*-
 
-import requests
 import datetime
 import time
 import os
 import sys
 import json
 import random
-from requests.auth import HTTPBasicAuth
+
+from app.exception import ContatosInvalido
+from app.logs import Logs
+from app.uteis import Uteis
+from app.request import Request
 
 
-class Disparos(object):
+class Disparos:
 
-    def __init__(self):
-        self.inicio = time.time()
-        self.args = sys.argv
-        endereco = '/var/www/json/keys.json'
-        if 'localhost' in self.args:
-            self.localhost = True
-            self.URI = 'http://localhost:5000/'
-        elif 'programacao' in self.args:
-            self.localhost = True
-            self.URI = 'http://localhost:5000/'
-            endereco = '/home/www/json/keys.json'
-        else:
-            self.localhost = False
-            self.URI = 'http://imoveis.powempresas.com/'
-        with open(endereco) as json_file:
-            data = json.load(json_file)
-        self.user = data['basic']['user']
-        self.passwd = data['basic']['passwd']
-        self.auth = HTTPBasicAuth(self.user, self.passwd)
-        self.URL_GET_CONTATOS = self.URI + 'get_contatos/'
-        self.URL_POST_CIDADES = self.URI + 'get_cidade_in_ids/'
-        self.URL_GET_MONGO = self.URI + 'imoveismongo/'
-        self.URL_POST = self.URI + 'imoveis_integra/'
-        self.URL_PUT = self.URI + 'imovel/'
-        self.ARQUIVO_LOG = '/var/log/sistema/email_mkt.log'
-        self.FORMATO_LOG_CONTATOS = '{data} - status_code {status_code} - funcao: get_contatos - tempo: {tempo} '
-        self.FORMATO_LOG_DISPAROS = '{data} - status_code {status_code} - qtde: {qtde} - funcao: disparos_totais - tempo: {tempo} '
-        self.FORMATO_LOG_EMAIL = '{data} - status_code {status_code} - id_cadastro: {id_cadastro} - imoveis: {imoveis} - funcao: email_individual - tempo: {tempo} '
-        self.argumentos = {}
-        for a in self.args:
-            if '-' in a:
-                cortado = a.split('-')
-                posicao_e = self.args.index(a)
-                self.argumentos[cortado[1]] = self.args[posicao_e + 1]
-        self.set_acao()
+    def __init__(self, args):
+        self.__inicio = time.time()
+        self.__args = args
+        self.__uteis = Uteis(args)
 
+    @property
+    def args(self):
+        return self.__args
 
-    def set_acao(self):
-        if 'python -m unittest' not in self.args:
-            if 'a' in self.argumentos:
-                func = getattr(Disparos, '{}'.format(self.argumentos['a']))
-                func(self)
-            else:
-                self.set()
 
     def set(self):
-        g = {}
-        g['limit'] = 10
-        g['dias'] = 60
-        if 'qtde' in self.argumentos:
-            g['limit'] = self.argumentos['qtde']
-        if 'dias' in self.argumentos:
-            g['dias'] = self.argumentos['dias']
-        data_log_contatos = {'data': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                              'qtde': 0,
-                              'tempo': 0,
-                             'status_code': 100
-                             }
-        try:
-            itens = requests.get(self.URL_GET_CONTATOS, params=g, auth=self.auth)
-            status_code = itens.status_code
-        except requests.exceptions.HTTPError as errh:
-            status_code = 403
-            if 'verbose' in self.argumentos:
-                print("Http Error:", errh)
-            pass
-        except requests.exceptions.ConnectionError as errc:
-            status_code = 401
-            if 'verbose' in self.argumentos:
-                print("Error Connecting:", errc)
-            pass
-        except requests.exceptions.Timeout as errt:
-            status_code = 408
-            if 'verbose' in self.argumentos:
-                print("Timeout Error:", errt)
-            pass
-        except requests.exceptions.RequestException as err:
-            status_code = 400
-            if 'verbose' in self.argumentos:
-                print("OOps: Something Else", err)
-            pass
-        except:
-            status_code = 500
-            print("OOps: Something Else")
-            pass
-        data_log_contatos['status_code'] = status_code
-        if status_code == 200:
-            i = itens.json()
-            data_log_contatos['qtde'] = len(i)
-            if len(i) > 0:
-                self.processa_itens(i)
-        self.fim = time.time()
-        data_log_contatos['tempo'] = self.fim - self.inicio
-        linha = self.FORMATO_LOG_CONTATOS.format(**data_log_contatos)
-        with open(self.ARQUIVO_LOG, 'a') as arq:
-            arq.write(linha)
-            arq.write('\r\n')
+        contatos = Contatos(self.args)
+        if contatos.set_contatos():
+            self._set_totais()
+            for contato in contatos.itens:
+                self.processa_item(contato)
 
-    def processa_itens(self,contatos):
-        for contato in contatos:
-            email = self.get_message(contato)
-            print(email)
 
-    cidades = []
+
+
+
+
+
+        # if len(contatos) > 0:
+        #     for contato in contatos:
+        #         processou = self.processa_item(contato)
+        #         if processou:
+        #             totais['ok'] += 1
+        #         else:
+        #             totais['error'] += 1
+
+
+    def processa_item(self,contato):
+        cidade = self.get_cidades(contato['cidades'])
+        filtro = ''
+        imovel = self.get_imoveis()
+        return True
+
+    def set_filtro(self,contato):
+        pass
+
+    def get_imoveis(self,filtro):
+        pass
+
+
+    def get_cidades(self,ids):
+        cidade = {}
+        ids_ = tuple(map(int, ids.split(',')))
+        if ids_[0] in self.cidades:
+            cidade = self.cidades[ids_[0]]
+        else:
+            cidade = self.set_cidades(ids)
+        return cidade
+
+
+    def set_cidades(self,ids):
+        data = {'filtro': {}}
+        data['filtro']['ids'] = ids
+        data['url_tipo'] = 'cidades_in'
+        data['tipo'] = 'get'
+        cidades = self.request(data)
+        self.cidades[cidades[0]['id']] = {
+                'logo': cidades[0]['topo'],
+                'titulo':cidades[0]['nome'],
+                'link':cidades[0]['link'],
+                'portal':cidades[0]['portal']
+        }
+        return self.cidades[cidades[0]['id']]
+
+    cidades = {}
 
     def get_message(self, contato):
         data = {}
         if contato['id_cidade'] in self.cidades:
-            data['cidade'] =
+            data['cidade'] = ''
         print(contato)
         return True
 
-    def request(self,data):
-        try:
-            itens = requests.get(self.URL_GET_CONTATOS, params=g, auth=self.auth)
-            status_code = itens.status_code
-        except requests.exceptions.HTTPError as errh:
-            status_code = 403
-            if 'verbose' in self.argumentos:
-                print("Http Error:", errh)
-            pass
-        except requests.exceptions.ConnectionError as errc:
-            status_code = 401
-            if 'verbose' in self.argumentos:
-                print("Error Connecting:", errc)
-            pass
-        except requests.exceptions.Timeout as errt:
-            status_code = 408
-            if 'verbose' in self.argumentos:
-                print("Timeout Error:", errt)
-            pass
-        except requests.exceptions.RequestException as err:
-            status_code = 400
-            if 'verbose' in self.argumentos:
-                print("OOps: Something Else", err)
-            pass
-        except:
-            status_code = 500
-            print("OOps: Something Else")
-            pass
-        data_log_contatos['status_code'] = status_code
-        if status_code == 200:
-            i = itens.json()
-        return itens
+    def _set_totais(self,qtde):
+        self.__totais = {
+            'total': qtde,
+            'ok': 0,
+            'error': 0
+        }
 
-    def set_log(self,data):
-        data_log_contatos['tempo'] = self.fim - self.inicio
-        linha = self.FORMATO_LOG_CONTATOS.format(**data_log_contatos)
-        with open(self.ARQUIVO_LOG, 'a') as arq:
-            arq.write(linha)
-            arq.write('\r\n')
+    @property
+    def totais(self):
+        return self.__totais
+
+
+class Contatos:
+    def __init__(self, args):
+        self.__args = args
+        self.__uteis = Uteis(args)
+
+    def set_contatos(self):
+        data = self._get_filtro()
+        data['url_tipo'] = 'contatos'
+        data['tipo'] = 'get'
+        self.__contatos = Request(self.__uteis).request(data)
+        print(self.contatos)
+        if self.contatos:
+            return True
+        else:
+            message = 'Nenhum contato retornado'
+            self.log_error(message)
+            raise ContatosInvalido(message)
+
+    def _get_filtro(self):
+        data = {'filtro': {}}
+        data['filtro']['limit'] = 10
+        data['filtro']['dias'] = 60
+        print('dias' in self.__args)
+        if 'qtde' in self.__args:
+            data['filtro']['limit'] = self.__args['qtde']
+        if 'dias' in self.__args:
+            data['filtro']['dias'] = self.__args['dias']
+        return data
+
+    @property
+    def itens(self):
+        return self.__contatos
+
+    def log_error(self, message):
+        data = {
+            'formato': 'contatos_erro',
+            'arquivo': 'erro',
+            'data':{
+                'data':datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                'message':message
+            }
+        }
+        Logs(data)
+
+class Cidades:
+    def __init__(self):
+        pass
+
+class Imoveis:
+    def __init__(self):
+        pass
+
+class Email:
+    def __init__(self):
+        pass
 
 
 if __name__ == '__main__':

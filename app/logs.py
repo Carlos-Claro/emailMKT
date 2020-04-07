@@ -24,6 +24,8 @@ class Logs:
             'email' : '{data} - status_code {status_code} - id_cadastro: {id_cadastro} - imoveis: {imoveis} - funcao: email_individual - tempo: {tempo} ',
             'log_erro': '{data} - message {message} - erro_log ',
             'cidades_erro': '{data} - message {message} - erro_cidades ',
+            'imoveis_erro': '{data} - message {message} - erro_imoveis ',
+            'contato_erro': '{data} - message {message} - erro_contato ',
         }
         if data['tipo'] == 'arquivo':
             try:

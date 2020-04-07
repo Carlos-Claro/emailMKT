@@ -11,3 +11,8 @@ class KeysInvalido(Exception):
 class ContatosInvalido(Exception):
     pass
 
+class ImoveisInvalido(Exception):
+    pass
+
+class EmailInvalido(Exception):
+    pass

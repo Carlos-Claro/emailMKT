@@ -31,7 +31,7 @@ class Request:
             'contatos': self.__uri + 'get_contatos/',
             'contatos_errado': self.__uri + 'get_contatos__/',
             'cidades_in': self.__uri + 'get_cidade_in_ids/',
-            'imoveis': self.__uri + 'imoveismongo/'
+            'imoveis': self.__uri + 'imoveismongo'
         }
         if tipo in itens:
             try:
@@ -81,7 +81,6 @@ class Request:
             self.log_error(status_code,errh)
             raise RequestInvalido(errh)
         except requests.exceptions.ConnectionError as errc:
-            print(errc)
             status_code = 401
             self.log_error(status_code, errc)
             raise RequestInvalido(errc)
@@ -100,7 +99,6 @@ class Request:
             raise RequestInvalido(message)
         self.set_data_log('status_code',status_code)
         i = {}
-        print(status_code)
         if 200 <= status_code <= 299:
             if status_code == 204:
                 i = {}

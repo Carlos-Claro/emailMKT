@@ -22,7 +22,9 @@ import sys
 import json
 import random
 
-from app.exception import ContatosInvalido
+from email_validator import validate_email, EmailNotValidError
+
+from app.exception import ContatosInvalido, ImoveisInvalido, EmailInvalido
 from app.logs import Logs
 from app.uteis import Uteis
 from app.request import Request
@@ -35,6 +37,7 @@ class Disparos:
         self.__args = args
         self.__uteis = Uteis(args)
         self.__cidades = Cidades(args)
+        self._set_totais(0)
 
     @property
     def args(self):
@@ -43,23 +46,17 @@ class Disparos:
     def set(self):
         contatos = Contatos(self.args)
         if contatos.set_contatos():
-            self._set_totais()
             for contato in contatos.itens:
-                self.processa_item(contato)
+                print(contato)
+                if self.__cidades.set_cidades(contato['id']):
+                    try:
+                        contato_email = Contato(self.args, contato, self.__cidades.get_itens(contato['id'])).set()
+                        self.__totais['ok'] += 1
+                    except:
+                        self.__totais['error'] += 1
+                else:
+                    self.__totais['error'] += 1
 
-    def processa_item(self,contato):
-        self.__cidades.set_cidades(contato['ids'])
-        imoveis = Imoveis(self.__args, contato, self.__cidades)
-
-
-
-
-    def get_message(self, contato):
-        data = {}
-        if contato['id_cidade'] in self.cidades:
-            data['cidade'] = ''
-        print(contato)
-        return True
 
     def _set_totais(self,qtde):
         self.__totais = {
@@ -71,6 +68,46 @@ class Disparos:
     @property
     def totais(self):
         return self.__totais
+
+class Contato:
+    def __init__(self,args,contato,cidades):
+        self.__cidades = cidades
+        self.__contato = contato
+        self.__args = args
+
+    @property
+    def contato(self):
+        return self.__contato
+
+    @property
+    def imoveis(self):
+        return self.__imoveis
+
+    def set(self):
+        try:
+            v = validate_email(self.contato['email'])
+            self.__imoveis = Imoveis(self.__args, self.__contato)
+        except EmailNotValidError as e:
+            message = '{} - Email inválido: {} - id {}'.format(str(e), self.contato['email'], self.contato['id'])
+            self.log_error(message)
+            raise EmailInvalido(message)
+        except ImoveisInvalido:
+            return False
+
+
+
+    def log_error(self, message):
+        data = {
+            'formato': 'contato_erro',
+            'arquivo': 'erro',
+            'data':{
+                'data':datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                'message':message
+            }
+        }
+        Logs(data)
+
+
 
 
 class Contatos:
@@ -94,7 +131,6 @@ class Contatos:
         data = {'filtro': {}}
         data['filtro']['limit'] = 10
         data['filtro']['dias'] = 60
-        print('dias' in self.__args)
         if 'qtde' in self.__args:
             data['filtro']['limit'] = self.__args['qtde']
         if 'dias' in self.__args:
@@ -125,6 +161,17 @@ class Cidades:
     @property
     def itens(self):
         return self.__cidades
+
+    def get_itens(self,ids):
+        ids_ = tuple(map(int, ids.split(',')))
+        retorno = {'itens':{},'principal':0}
+        c = 0
+        for id in ids_:
+            if c == 0:
+                retorno['principal'] = id
+            retorno['itens'][id] = self.itens[id]
+            c += 1
+        return retorno
 
     def set_cidades(self,ids):
         ids_ = tuple(map(int, ids.split(',')))
@@ -167,9 +214,50 @@ class Cidades:
         Logs(data)
 
 class Imoveis:
-    def __init__(self, args, contato, cidades):
+    def __init__(self, args, contato):
+        self.__args = args
+        self.__uteis = Uteis(self.__args)
+        self.__contato = contato
+        self._set_imoveis()
 
-        pass
+    @property
+    def itens(self):
+        return self.__imoveis
+
+    @property
+    def contato(self):
+        return self.__contato
+
+    def _set_filtro(self):
+        data = {}
+        data['limit'] = 6
+        data['tipo'] = self.contato['tipo_negocio_item']
+        data['id_tipo'] = self.contato['id_tipo_item']
+        data['cidades_id'] = self.contato['cidades']
+        return data
+
+    def _set_imoveis(self):
+        data = {'filtro': self._set_filtro()}
+        data['url_tipo'] = 'imoveis'
+        data['tipo'] = 'get'
+        self.__imoveis = Request(self.__uteis).request(data)
+        print(self.__imoveis)
+        if not len(self.__imoveis['itens']['itens']):
+            message = 'Nenhum imovel para este contato id_contato: {}'.format(self.contato['id'])
+            self.log_error(message)
+            raise ImoveisInvalido(message)
+
+
+    def log_error(self, message):
+        data = {
+            'formato': 'imoveis_erro',
+            'arquivo': 'erro',
+            'data':{
+                'data':datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                'message':message
+            }
+        }
+        Logs(data)
 
 class Email:
     def __init__(self):

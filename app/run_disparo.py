@@ -6,7 +6,7 @@ from app.disparos import Disparos
 args = Argumentos().get()
 
 args['localhost'] = 1
-args['dias'] = 30
+args['dias'] = 45
 
 
 Disparos(args).set()

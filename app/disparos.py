@@ -47,16 +47,16 @@ class Disparos:
         contatos = Contatos(self.args)
         if contatos.set_contatos():
             for contato in contatos.itens:
-                print(contato)
-                if self.__cidades.set_cidades(contato['id']):
+                tem_cidade = self.__cidades.set_cidades(contato['cidades'])
+                if tem_cidade:
                     try:
-                        contato_email = Contato(self.args, contato, self.__cidades.get_itens(contato['id'])).set()
+                        contato_email = Contato(self.args, contato, self.__cidades.get_itens(contato['cidades'])).set()
                         self.__totais['ok'] += 1
                     except:
                         self.__totais['error'] += 1
                 else:
                     self.__totais['error'] += 1
-
+        print(self.__totais)
 
     def _set_totais(self,qtde):
         self.__totais = {
@@ -87,14 +87,20 @@ class Contato:
         try:
             v = validate_email(self.contato['email'])
             self.__imoveis = Imoveis(self.__args, self.__contato)
+            corpo = Corpo_email(self.__cidades,self.__contato, self.__imoveis.itens['itens'])
+            print(corpo.get_imoveis_corpo())
         except EmailNotValidError as e:
             message = '{} - Email inválido: {} - id {}'.format(str(e), self.contato['email'], self.contato['id'])
             self.log_error(message)
             raise EmailInvalido(message)
         except ImoveisInvalido:
+            message = 'Imoveis invalidos: id {}'.format(self.contato['id'])
+            self.log_error(message)
             return False
-
-
+        except Exception as a:
+            message = '{} id {}'.format(a,self.contato['id'])
+            self.log_error(message)
+            return False
 
     def log_error(self, message):
         data = {
@@ -107,6 +113,157 @@ class Contato:
         }
         Logs(data)
 
+
+class Corpo_email:
+    def __init__(self, cidades, contato, imoveis):
+        self.__contato = contato
+        self.__cidades = cidades
+        self.__imoveis = imoveis
+        self._imovel_html()
+        self._corpo_html()
+        self._link_html()
+
+    def _corpo_html(self):
+        with open('views/corpo.html','r') as a:
+            self.html_corpo = a.read()
+
+    def _link_html(self):
+        with open('views/link.html','r') as a:
+            self.html_link = a.read()
+
+    def _imovel_html(self):
+        with open('views/imovel.html','r') as a:
+            self.html_imovel = a.read()
+
+    def _set_imoveis_corpo(self):
+        imoveis = []
+        for imovel in self.__imoveis['itens']:
+            campos = self._set_campos(imovel)
+            self._set_html_imovel(campos)
+            imoveis.append(self.html_imovel.format(**campos))
+        return ''.join(imoveis)
+
+    def get_imoveis_corpo(self):
+        try:
+            corpo_imoveis = self._set_imoveis_corpo()
+            email = self._set_html_corpo(corpo_imoveis)
+            print(email)
+            return email
+        except Exception as b:
+            print(b)
+
+    def _set_html_imovel(self,campos):
+        try:
+            a = self.html_imovel.format(**campos)
+            return a
+        except Exception as b:
+            message = 'Problema no html do contato {}'.format(b)
+            self.log_error(message)
+            raise ContatoInvalido(message)
+
+    def _set_link(self,imovel):
+        return '{}/imovel/{tipo_negocio}-{imoveis_tipos_link}' \
+               '-{cidades_link}-{bairros_link}-{imobiliaria_nome_seo}' \
+               '/{id}/e'.format(self.__cidades['itens'][self.__cidades['principal']]['portal'],**imovel)
+
+    def _set_titulo(self,imovel):
+        return '{} {}, {}'.format(imovel['imoveis_tipos_titulo'],self._set_tipo_negocio(imovel['tipo_negocio']), imovel['bairro'])
+
+    def _set_tipo_negocio(self,tipo):
+        if tipo == 'venda':
+            return ' à Venda'
+        return ' para Alugar '
+
+
+    def _set_campos(self,imovel):
+        retorno = {
+            'classe': imovel['tipo_negocio'],
+            'imovel_link': self._set_link(imovel),
+            'imovel_titulo': self._set_titulo(imovel),
+            'image_principal': self._set_image_principal(imovel['images']),
+            'image_descricao' : self._set_titulo_image(imovel),
+            'imoveis_tipos_titulo': imovel['imoveis_tipos_titulo'],
+            'bairro_titulo': imovel['bairro'],
+            'cidade_titulo': imovel['cidade_nome'],
+            'relacionado_link': self._set_link_relacionado(imovel),
+            'relacionado_titulo': self._set_titulo_relacionado(imovel)
+        }
+        return retorno
+
+    def _set_image_principal(self, images):
+        return images[0]['arquivo']
+
+    def _set_titulo_image(self, imovel):
+        if len(imovel['images'][0]['titulo']):
+            return imovel['images'][0]['titulo']
+        return self._set_titulo(imovel)
+
+    def _set_link_relacionado(self, imovel):
+        return '{}/{imoveis_tipos_link}-{tipo_negocio}-{cidades_link}-{bairros_link}/'.format(
+            self.__cidades['itens'][self.__cidades['principal']]['portal'], **imovel)
+
+    def _set_titulo_relacionado(self, imovel):
+        return '{} {}, {}'.format(imovel['imoveis_tipos_titulo'], self._set_tipo_negocio(imovel['tipo_negocio']),
+                                  imovel['bairro'])
+
+
+    def _set_html_corpo(self, corpo_imoveis):
+        try:
+            campos = self._set_campo_corpo(corpo_imoveis)
+            print(self.html_corpo.format(**campos))
+            return self.html_corpo.format(**campos)
+        except Exception as a:
+            print(a)
+
+    def _set_campo_corpo(self, imoveis):
+        a = {
+            'titulo': 'Encontre seu novo Imóvel',
+            'portal_link': self.__cidades['itens'][self.__cidades['principal']]['portal'],
+            'portal_logo': 'https://admin.powempresas.com/portais/logos/{}'.format(self.__cidades['itens'][self.__cidades['principal']]['logo']),
+            'portal_titulo': 'Imóveis em {}'.format(self.__cidades['itens'][self.__cidades['principal']]['titulo']),
+            'assunto': 'Encontre seu novo Imóvel em {} no portal {}'.format(self.__cidades['itens'][self.__cidades['principal']]['titulo'], self.__cidades['itens'][self.__cidades['principal']]['portal']),
+            'imoveis': imoveis,
+            'contato_tipo': self.__contato['tipo_negocio_item'],
+            'cidade_titulo': self.__cidades['itens'][self.__cidades['principal']]['titulo'],
+            'tipos_links': self._set_tipos_links(),
+            'contato_nome': self.__contato['nome'],
+            'contato_email': self.__contato['email'],
+        }
+        return a
+
+    def _set_tipo_negocio_int(self):
+        data = {
+            'venda':0,
+            'locacao':1
+        }
+        return data[self.__contato['tipo_negocio_item']]
+
+    def _set_tipos_links(self):
+        menu = self.__cidades['itens'][self.__cidades['principal']]['menu'][self._set_tipo_negocio_int()]
+        links = []
+        for item in menu['itens']:
+            campos =  {
+                'tipo_link' : '{}/{}-{}-{}'.format(self.__cidades['itens'][self.__cidades['principal']]['portal'],
+                                                   item['link'],
+                                                   menu['link'],
+                                                   self.__cidades['itens'][self.__cidades['principal']]['link']
+                                                   ),
+                'titulo_link': '{} {} em {}'.format(menu['titulo'],item['descricao'], self.__cidades['itens'][self.__cidades['principal']]['titulo']),
+                'titulo': '{} <br> + {} Imóveis'.format(item['descricao'],item['qtde'])
+            }
+            links.append(self.html_link.format(**campos))
+        return ''.join(links)
+
+    def log_error(self, message):
+        data = {
+            'formato': 'contato_erro',
+            'arquivo': 'erro',
+            'data':{
+                'data':datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                'message':message
+            }
+        }
+        Logs(data)
 
 
 
@@ -179,7 +336,6 @@ class Cidades:
             return True
         return self.get_cidades(ids)
 
-
     def get_cidades(self,ids):
         data = {'filtro': {}}
         data['filtro']['ids'] = ids
@@ -192,7 +348,8 @@ class Cidades:
                     'logo': cidade['topo'],
                     'titulo':cidade['nome'],
                     'link':cidade['link'],
-                    'portal':cidade['portal']
+                    'portal':cidade['portal'],
+                    'menu':cidade['menu']
                 }
             if len(cidades) != len(ids.split(',')):
                 message = 'Uma ou mais cidades não encontradas com os ids: {}'.format(ids)
@@ -241,9 +398,8 @@ class Imoveis:
         data['url_tipo'] = 'imoveis'
         data['tipo'] = 'get'
         self.__imoveis = Request(self.__uteis).request(data)
-        print(self.__imoveis)
         if not len(self.__imoveis['itens']['itens']):
-            message = 'Nenhum imovel para este contato id_contato: {}'.format(self.contato['id'])
+            message = 'Nenhum imovel para este id_contato: {}'.format(self.contato['id'])
             self.log_error(message)
             raise ImoveisInvalido(message)
 

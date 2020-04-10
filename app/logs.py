@@ -20,6 +20,7 @@ class Logs:
             'request' : '{data} - status_code {status_code} - funcao: {tipo} - qtde: {qtde} - tempo: {tempo} ',
             'request_erro': '{data} - status_code {status_code} - message {message} - erro_request ',
             'contatos_erro': '{data} - message {message} - erro_contatos ',
+            'contato_erro': '{data} - message {message} - erro_contato ',
             'disparos': '{data} - status_code {status_code} - qtde: {qtde} - funcao: disparos_totais - tempo: {tempo} ',
             'email' : '{data} - status_code {status_code} - id_cadastro: {id_cadastro} - imoveis: {imoveis} - funcao: email_individual - tempo: {tempo} ',
             'log_erro': '{data} - message {message} - erro_log ',

@@ -16,3 +16,6 @@ class ImoveisInvalido(Exception):
 
 class EmailInvalido(Exception):
     pass
+
+class ContatoInvalido(Exception):
+    pass

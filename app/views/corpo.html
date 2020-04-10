@@ -1,0 +1,87 @@
+<!DOCTYPE html!>
+<html lang=pt-br>
+    <head>
+        <meta charset="UTF-8" >
+        <meta name="author" content="POWImoveis - <comercial@pow.com.br>" />
+        <title>{titulo}</title>
+        <link type="text/css" href="http://admin.powempresas.com/css/bootstrap.css" rel="stylesheet">
+    </head>
+    <body>
+        <div class="container text-center">
+            <table style="width:760px; margin:0 auto;">
+                <tr>
+                    <td>
+                        <center>
+                            <a href="{portal_link}"><img src="{portal_logo}"></a>
+                        </center>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div class="container">
+                            <div class="row">
+                                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                                    <h2 style="text-align: center;">{assunto}</h2>
+                                    <center>
+                                        <a href="{portal_link}" class="btn btn-lg btn-primary " target="_blank">CLIQUE AQUI PARA BUSCAR MAIS IMÓVEIS NO PORTAL {portal_titulo} </a>
+                                    </center>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="height: 15px;">&nbsp;</td>
+                </tr>
+            </table>
+            <style type="text/css">
+                .thumbnail {
+                    margin-left: 5px;
+                }
+                .thumbnail img {
+                    height: auto;
+                    max-height: 200px;
+                    width: 100%;
+                }
+            </style>
+            <table style="width:680px; margin:0 auto;">
+                {imoveis}
+            </table>
+            <div class="divider-modo1"></div>
+            <table style="width:680px; margin:0 auto;">
+                <tr>
+                    <td>
+                        <h2>+ Imóveis para {contato_tipo} em {cidade_titulo}</h2>
+                        {tipos_links}
+                    </td>
+                </tr>
+            </table>
+
+            <table width="100%">
+                <tr>
+                    <td style="height: 15px;">&nbsp;</td>
+                </tr>
+                <tr>
+                    <td>
+                        <div class="container">
+                            <div class="row">
+                                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                                    <center><a href="{portal_link}" class="btn btn-lg btn-primary " target="_blank" style="margin-bottom: 15px;">TEMOS O IMÓVEL QUE VOCÊ BUSCA NO PORTAL {portal_titulo}, CLIQUE E CONFIRA </a></center>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="container">
+                            <div class="row">
+                                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                                    <center>Olá, {contato_nome} <{contato_email}><br> Você está recebendo este e-mail, pois autorizou o portal {portal_titulo},<br> em contato que realizou na ficha de imóveis do seu interresse nos últimos dias.</center>
+                                    <br><br><center>Este é um serviço <a href="http://www.powinternet.com.br">Pow Internet </a></center>
+                                    <br><br><br><center><span class="alert alert-success"><a href="%REMOVER%">Não quero mais receber este E-mail</a></span></center>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </body>
+</html>

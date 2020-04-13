@@ -189,4 +189,6 @@ def test_deve_retornar_raises_quando_contato_valido_via_contato(args_dias_30,con
     contato = Contato(args_dias_30, contato_invalido, cidades).set()
     assert not contato
 
-
+def test_deve_retornar_seis_imoveis_quando_contato_valido(args_dias_30,contato):
+    imoveis = Imoveis(args_dias_30,contato)
+    assert imoveis.itens['itens']['qtde'] == 6

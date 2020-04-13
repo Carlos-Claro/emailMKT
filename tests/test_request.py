@@ -57,7 +57,7 @@ def test_deve_retornar_url_false_quando_get_tipo_invalido(uteis_localhost):
 
 def test_deve_retornar_url_imoveismongo_quando_get_tipo_imoveis(uteis_localhost):
     request = Request(uteis_localhost)
-    uri = 'http://localhost:5000/imoveismongo/'
+    uri = 'http://localhost:5000/imoveismongo'
     assert request.get_tipo('imoveis') == uri
 
 def test_deve_retornar_auth_object_quando_localhost(uteis_localhost):

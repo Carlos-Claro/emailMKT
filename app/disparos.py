@@ -23,8 +23,11 @@ import json
 import random
 
 from email_validator import validate_email, EmailNotValidError
+import smtplib
+from email.message import EmailMessage
 
-from app.exception import ContatosInvalido, ImoveisInvalido, EmailInvalido
+
+from app.exception import ContatosInvalido, ImoveisInvalido, EmailInvalido, CorpoInvalido
 from app.logs import Logs
 from app.uteis import Uteis
 from app.request import Request
@@ -50,12 +53,16 @@ class Disparos:
                 tem_cidade = self.__cidades.set_cidades(contato['cidades'])
                 if tem_cidade:
                     try:
-                        contato_email = Contato(self.args, contato, self.__cidades.get_itens(contato['cidades'])).set()
-                        self.__totais['ok'] += 1
+                        contato = Contato(self.args, contato, self.__cidades.get_itens(contato['cidades'])).set()
+                        if contato:
+                            self.__totais['ok'] += 1
+                        else:
+                            self.__totais['error'] += 1
                     except:
                         self.__totais['error'] += 1
                 else:
                     self.__totais['error'] += 1
+
         print(self.__totais)
 
     def _set_totais(self,qtde):
@@ -74,21 +81,35 @@ class Contato:
         self.__cidades = cidades
         self.__contato = contato
         self.__args = args
+        self.__uteis = Uteis(self.__args)
+        self.__uteis.set_keys()
+        print(self.__uteis.keysEmail)
 
     @property
     def contato(self):
         return self.__contato
 
-    @property
-    def imoveis(self):
-        return self.__imoveis
-
     def set(self):
         try:
             v = validate_email(self.contato['email'])
-            self.__imoveis = Imoveis(self.__args, self.__contato)
-            corpo = Corpo_email(self.__cidades,self.__contato, self.__imoveis.itens['itens'])
-            print(corpo.get_imoveis_corpo())
+            imoveis = Imoveis(self.__args, self.__contato)
+            corpo = Corpo_email(self.__cidades,self.__contato, imoveis.itens['itens'], self.__uteis)
+            c = corpo.get_imoveis_corpo()
+            msg = EmailMessage()
+            # msg.set_content(c)
+            msg['Subject'] = 'teste envio, via ferramenta de remarket email'
+            msg['From'] = 'envio@powinternet.com.br'
+            msg['To'] = 'carlosclaro79@gmail.com'
+            msg.add_header('Content-Type', 'text/html')
+            msg.set_content(c, subtype='html')
+            # msg.set_payload(c)
+            # Send the message via our own SMTP server.
+            s = smtplib.SMTP(self.__uteis.keysEmail['smtp_host'],int(self.__uteis.keysEmail['smtp_port']))
+            s.login(self.__uteis.keysEmail['smtp_user'],self.__uteis.keysEmail['smtp_pass'])
+            # s.sendmail(msg)
+            s.sendmail(msg['From'], [msg['To']], msg.as_string())
+            s.quit()
+            return True
         except EmailNotValidError as e:
             message = '{} - Email inválido: {} - id {}'.format(str(e), self.contato['email'], self.contato['id'])
             self.log_error(message)
@@ -115,24 +136,26 @@ class Contato:
 
 
 class Corpo_email:
-    def __init__(self, cidades, contato, imoveis):
+    def __init__(self, cidades, contato, imoveis, uteis):
         self.__contato = contato
         self.__cidades = cidades
         self.__imoveis = imoveis
+        self.__uteis = uteis
         self._imovel_html()
-        self._corpo_html()
         self._link_html()
+        self._corpo_html()
+
 
     def _corpo_html(self):
-        with open('views/corpo.html','r') as a:
+        with open('{}/views/corpo.html'.format(self.__uteis.cwd),'r') as a:
             self.html_corpo = a.read()
 
     def _link_html(self):
-        with open('views/link.html','r') as a:
+        with open('{}/views/link.html'.format(self.__uteis.cwd),'r') as a:
             self.html_link = a.read()
 
     def _imovel_html(self):
-        with open('views/imovel.html','r') as a:
+        with open('{}/views/imovel.html'.format(self.__uteis.cwd),'r') as a:
             self.html_imovel = a.read()
 
     def _set_imoveis_corpo(self):
@@ -147,10 +170,11 @@ class Corpo_email:
         try:
             corpo_imoveis = self._set_imoveis_corpo()
             email = self._set_html_corpo(corpo_imoveis)
-            print(email)
             return email
         except Exception as b:
-            print(b)
+            message = 'Erro compondo imoveis html {}'.format(b)
+            self.log_error(message)
+            raise CorpoInvalido(message)
 
     def _set_html_imovel(self,campos):
         try:
@@ -210,10 +234,12 @@ class Corpo_email:
     def _set_html_corpo(self, corpo_imoveis):
         try:
             campos = self._set_campo_corpo(corpo_imoveis)
-            print(self.html_corpo.format(**campos))
-            return self.html_corpo.format(**campos)
+            b = self.html_corpo.format(**campos)
+            return b
         except Exception as a:
-            print(a)
+            message = 'Erro compondo corpo html {}'.format(a)
+            self.log_error(message)
+            raise CorpoInvalido(message)
 
     def _set_campo_corpo(self, imoveis):
         a = {
@@ -242,8 +268,8 @@ class Corpo_email:
         menu = self.__cidades['itens'][self.__cidades['principal']]['menu'][self._set_tipo_negocio_int()]
         links = []
         for item in menu['itens']:
-            campos =  {
-                'tipo_link' : '{}/{}-{}-{}'.format(self.__cidades['itens'][self.__cidades['principal']]['portal'],
+            campos = {
+                'tipo_link': '{}/{}-{}-{}'.format(self.__cidades['itens'][self.__cidades['principal']]['portal'],
                                                    item['link'],
                                                    menu['link'],
                                                    self.__cidades['itens'][self.__cidades['principal']]['link']
@@ -286,7 +312,7 @@ class Contatos:
 
     def _get_filtro(self):
         data = {'filtro': {}}
-        data['filtro']['limit'] = 10
+        data['filtro']['limit'] = 1
         data['filtro']['dias'] = 60
         if 'qtde' in self.__args:
             data['filtro']['limit'] = self.__args['qtde']

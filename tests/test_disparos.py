@@ -15,7 +15,7 @@ def args_dias_1():
 def args_dias_30():
     args = {}
     args['localhost'] = 1
-    args['dias'] = 30
+    args['dias'] = 60
     return args
 
 @pytest.fixture

@@ -19,3 +19,6 @@ class EmailInvalido(Exception):
 
 class ContatoInvalido(Exception):
     pass
+
+class CorpoInvalido(Exception):
+    pass

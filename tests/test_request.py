@@ -21,7 +21,7 @@ def uteis_():
 def data_contatos():
     data = {'filtro': {}}
     data['filtro']['limit'] = 5
-    data['filtro']['dias'] = 60
+    data['filtro']['dias'] = 90
     data['url_tipo'] = 'contatos'
     data['tipo'] = 'get'
     return data
@@ -30,7 +30,7 @@ def data_contatos():
 def data_contatos_tipo_errado():
     data = {'filtro': {}}
     data['filtro']['limit'] = 5
-    data['filtro']['dias'] = 60
+    data['filtro']['dias'] = 90
     data['url_tipo'] = 'contatos_errado'
     data['tipo'] = 'get'
     return data

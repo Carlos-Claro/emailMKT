@@ -7,6 +7,7 @@ class Uteis:
         self.__args = args
         self.set_endereco_keys()
         self.set_uri()
+        self.set_cwd()
         self.__keys = {}
 
     def set_uri(self):
@@ -28,6 +29,7 @@ class Uteis:
             with open(self.endereco) as json_file:
                 keys = json.load(json_file)
                 self.__keys = keys['basic']
+                self.__keysEmail = keys['email']['iagente']
         except:
              raise KeysInvalido('Não existem estas chaves')
 
@@ -36,6 +38,10 @@ class Uteis:
 
     def _is_programacao(self):
         return 'programacao' in self.__args
+
+    @property
+    def cwd(self):
+        return self.__cwd
 
     @property
     def uri(self):
@@ -50,6 +56,13 @@ class Uteis:
         return self.__keys
 
     @property
+    def keysEmail(self):
+        return self.__keysEmail
+
+    @property
     def endereco(self):
         return self.__endereco
+
+    def set_cwd(self):
+        self.__cwd = '/var/www/python/emailMkt/app'
 

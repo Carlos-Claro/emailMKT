@@ -26,16 +26,21 @@ class Request:
     def auth(self):
         return self.__auth
 
-    def get_tipo(self,tipo):
+    def get_tipo(self,tipo,data):
         itens = {
             'contatos': self.__uri + 'get_contatos/',
             'contatos_errado': self.__uri + 'get_contatos__/',
             'cidades_in': self.__uri + 'get_cidade_in_ids/',
-            'imoveis': self.__uri + 'imoveismongo'
+            'imoveis': self.__uri + 'imoveismongo',
+            'contato_up': self.__uri + 'contatos_site_sincronizado/',
+            'contato_up_des': self.__uri + 'contatos_site_sincronizado_des/',
         }
         if tipo in itens:
             try:
-                return itens[tipo]
+                if '{id}' in itens[tipo]:
+                    return itens[tipo].format(**data)
+                else:
+                    return itens[tipo]
             except KeyError:
                 message = 'Nenhuma chave disponivel'
                 self.log_error(100, message)
@@ -69,12 +74,14 @@ class Request:
     def request(self,data):
         self.set_auth()
         self.set_data_log_inicial(data['url_tipo'])
-        url = self.get_tipo(data['url_tipo'])
+        url = self.get_tipo(data['url_tipo'], data)
         try:
             if data['tipo'] == 'get':
                 itens = requests.get(url, params=data['filtro'], auth=self.auth)
             elif data['tipo'] == 'post':
                 itens = requests.post(url, params=data['itens'], auth=self.auth)
+            elif data['tipo'] == 'put':
+                itens = requests.put(url, params=data['itens'], auth=self.auth)
             status_code = itens.status_code
         except requests.exceptions.HTTPError as errh:
             status_code = 403
@@ -104,7 +111,10 @@ class Request:
                 i = {}
             else:
                 i = itens.json()
-            self.set_data_log('qtde', len(i))
+            if i != True:
+                self.set_data_log('qtde', len(i))
+            else:
+                self.set_data_log('qtde', i)
         else:
             message = 'Problemas na conexão, {} {}'.format(data['url_tipo'], url)
             self.log_error(status_code, message)

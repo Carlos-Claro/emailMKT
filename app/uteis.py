@@ -9,6 +9,7 @@ class Uteis:
         self.set_uri()
         self.set_cwd()
         self.__keys = {}
+        self.set_teste()
 
     def set_uri(self):
         if self._is_localhost() or self._is_programacao():
@@ -33,11 +34,18 @@ class Uteis:
         except:
              raise KeysInvalido('Não existem estas chaves')
 
+    def set_teste(self):
+        self.__teste = 'teste' in self.__args
+
     def _is_localhost(self):
         return 'localhost' in self.__args
 
     def _is_programacao(self):
         return 'programacao' in self.__args
+
+    @property
+    def teste(self):
+        return self.__teste
 
     @property
     def cwd(self):
@@ -65,4 +73,5 @@ class Uteis:
 
     def set_cwd(self):
         self.__cwd = '/var/www/python/emailMkt/app'
+
 

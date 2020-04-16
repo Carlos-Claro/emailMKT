@@ -49,21 +49,40 @@ class Disparos:
     def set(self):
         contatos = Contatos(self.args)
         if contatos.set_contatos():
-            for contato in contatos.itens:
-                tem_cidade = self.__cidades.set_cidades(contato['cidades'])
-                if tem_cidade:
-                    try:
-                        contato = Contato(self.args, contato, self.__cidades.get_itens(contato['cidades'])).set()
-                        if contato:
-                            self.__totais['ok'] += 1
-                        else:
-                            self.__totais['error'] += 1
-                    except:
-                        self.__totais['error'] += 1
-                else:
-                    self.__totais['error'] += 1
+            self.contatos(contatos.itens)
+        fim = time.time()
+        self.log(fim-self.__inicio)
 
-        print(self.__totais)
+    def contatos(self,contatos):
+        self._set_totais(len(contatos))
+        for contato in contatos:
+            tem_cidade = self.__cidades.set_cidades(contato['cidades'])
+            if tem_cidade:
+                try:
+                    contato_ = Contato(self.args, contato, self.__cidades.get_itens(contato['cidades'])).set()
+                    if contato_:
+                        self.__totais['ok'] += 1
+                    else:
+                        self.__totais['error'] += 1
+                except:
+                    self.__totais['error'] += 1
+            else:
+                self.__totais['error'] += 1
+
+
+    def log(self,tempo):
+        data = {
+            'formato': 'disparos',
+            'arquivo': 'log',
+            'data':{
+                'data':datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                'total':self.__totais['total'],
+                'ok':self.__totais['ok'],
+                'error':self.__totais['error'],
+                'tempo':tempo
+            }
+        }
+        Logs(data)
 
     def _set_totais(self,qtde):
         self.__totais = {
@@ -83,45 +102,83 @@ class Contato:
         self.__args = args
         self.__uteis = Uteis(self.__args)
         self.__uteis.set_keys()
-        print(self.__uteis.keysEmail)
 
     @property
     def contato(self):
         return self.__contato
 
     def set(self):
+        inicio = time.time()
         try:
             v = validate_email(self.contato['email'])
             imoveis = Imoveis(self.__args, self.__contato)
             corpo = Corpo_email(self.__cidades,self.__contato, imoveis.itens['itens'], self.__uteis)
             c = corpo.get_imoveis_corpo()
-            msg = EmailMessage()
-            # msg.set_content(c)
-            msg['Subject'] = 'teste envio, via ferramenta de remarket email'
-            msg['From'] = 'envio@powinternet.com.br'
-            msg['To'] = 'carlosclaro79@gmail.com'
-            msg.add_header('Content-Type', 'text/html')
-            msg.set_content(c, subtype='html')
-            # msg.set_payload(c)
-            # Send the message via our own SMTP server.
-            s = smtplib.SMTP(self.__uteis.keysEmail['smtp_host'],int(self.__uteis.keysEmail['smtp_port']))
-            s.login(self.__uteis.keysEmail['smtp_user'],self.__uteis.keysEmail['smtp_pass'])
-            # s.sendmail(msg)
-            s.sendmail(msg['From'], [msg['To']], msg.as_string())
-            s.quit()
-            return True
+            if self._envio(c):
+                #upload
+                fim = time.time()
+                self.log('ok',fim-inicio)
+                self.update_contato(self.contato['id'])
+                return True
+            fim = time.time()
+            self.log('erro_disparo',fim-inicio)
+            self.update_contato(self.contato['id'])
+            return False
         except EmailNotValidError as e:
             message = '{} - Email inválido: {} - id {}'.format(str(e), self.contato['email'], self.contato['id'])
             self.log_error(message)
+            self.update_contato(self.contato['id'])
             raise EmailInvalido(message)
         except ImoveisInvalido:
             message = 'Imoveis invalidos: id {}'.format(self.contato['id'])
             self.log_error(message)
+            self.update_contato(self.contato['id'])
             return False
         except Exception as a:
             message = '{} id {}'.format(a,self.contato['id'])
             self.log_error(message)
+            self.update_contato(self.contato['id'])
             return False
+
+    def _titulo_email(self):
+        itens = [
+            'Encontre seu novo imóvel',
+            'Mais ofertas de imóvel',
+            'Encontre mais imóveis hoje mesmo',
+            'Continue buscando mais imóveis',
+            'Temos mais imóveis para você'
+        ]
+        index = random.randint(0, len(itens) - 1)
+        return itens[index]
+
+    def _envio(self,corpo):
+        try:
+            msg = EmailMessage()
+            msg['Subject'] = self._titulo_email()
+            msg['From'] = 'envio@powinternet.com.br'
+            if self.__uteis.teste:
+                msg['To'] = 'carlosclaro79@gmail.com'
+            else:
+                msg['To'] = self.contato['email']
+            msg.add_header('Content-Type', 'text/html')
+            msg.set_content(corpo, subtype='html')
+            s = smtplib.SMTP(self.__uteis.keysEmail['smtp_host'], int(self.__uteis.keysEmail['smtp_port']))
+            s.login(self.__uteis.keysEmail['smtp_user'], self.__uteis.keysEmail['smtp_pass'])
+            s.sendmail(msg['From'], [msg['To']], msg.as_string())
+            s.quit()
+            return True
+        except Exception as a:
+            message = '{} id {}'.format(a, self.contato['id'])
+            self.log_error(message)
+            return False
+
+    def update_contato(self, id):
+        data = {'itens':{}}
+        data['itens']['ids'] = id
+        data['url_tipo'] = 'contato_up'
+        data['tipo'] = 'put'
+        return Request(self.__uteis).request(data)
+
 
     def log_error(self, message):
         data = {
@@ -134,6 +191,21 @@ class Contato:
         }
         Logs(data)
 
+    def log(self,status,tempo):
+        data = {
+            'formato': 'disparo',
+            'arquivo': 'log',
+            'data':{
+                'data':datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                'id':self.contato['id'],
+                'email': self.contato['email'],
+                'tempo': tempo,
+                'status': status
+            }
+        }
+        Logs(data)
+
+
 
 class Corpo_email:
     def __init__(self, cidades, contato, imoveis, uteis):
@@ -144,11 +216,16 @@ class Corpo_email:
         self._imovel_html()
         self._link_html()
         self._corpo_html()
+        self._css_html()
 
 
     def _corpo_html(self):
         with open('{}/views/corpo.html'.format(self.__uteis.cwd),'r') as a:
             self.html_corpo = a.read()
+
+    def _css_html(self):
+        with open('{}/views/bootstrap.css'.format(self.__uteis.cwd),'r') as a:
+            self.html_css = a.read()
 
     def _link_html(self):
         with open('{}/views/link.html'.format(self.__uteis.cwd),'r') as a:
@@ -164,7 +241,15 @@ class Corpo_email:
             campos = self._set_campos(imovel)
             self._set_html_imovel(campos)
             imoveis.append(self.html_imovel.format(**campos))
-        return ''.join(imoveis)
+        retorno = '<tr>'
+        x = 0
+        for i in imoveis:
+            retorno += '<td>{}</td>'.format(i)
+            x += 1
+            if x%2 == 0:
+                retorno += '</tr><tr>'
+        retorno += '</tr>'
+        return retorno
 
     def get_imoveis_corpo(self):
         try:
@@ -254,6 +339,7 @@ class Corpo_email:
             'tipos_links': self._set_tipos_links(),
             'contato_nome': self.__contato['nome'],
             'contato_email': self.__contato['email'],
+            'css': self.html_css
         }
         return a
 

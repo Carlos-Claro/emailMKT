@@ -1,6 +1,6 @@
 import pytest
 
-from app.disparos import Contatos, Cidades, Imoveis, Contato
+from app.disparos import Contatos, Cidades, Imoveis, Contato, Disparos
 from app.exception import ContatosInvalido, ImoveisInvalido, EmailInvalido
 
 
@@ -15,7 +15,17 @@ def args_dias_1():
 def args_dias_30():
     args = {}
     args['localhost'] = 1
+    # args['teste'] = 1
     args['dias'] = 60
+    return args
+
+@pytest.fixture
+def args_dias_30_test():
+    args = {}
+    args['localhost'] = 1
+    args['teste'] = 1
+    args['dias'] = 60
+    args['qtde'] = 5
     return args
 
 @pytest.fixture
@@ -43,7 +53,7 @@ def contato_invalido():
         'cidades': '2',
         'data': '09/03/2020 19:42',
         'email': 'programacao@pow.com.br',
-        'id': '575933',
+        'id': '572614,572612',
         'id_cadastro': 143364,
         'id_itens': '2023787',
         'id_tipo_item': '155',
@@ -91,14 +101,14 @@ def contato_dois_tipos():
     }
 
 @pytest.fixture
-def contato_dois_tipos():
+def contatos_dois_tipos():
     data = {}
     data['limit'] = 6
     data['imovel_para'] = 'venda'
     data['tem_foto'] = True
     data['id_tipo'] = '1,2'
     data['cidades_id'] = '1,2'
-    return filtro
+    return data
 
 @pytest.fixture
 def contato_um_tipo():
@@ -108,7 +118,7 @@ def contato_um_tipo():
     data['tem_foto'] = True
     data['id_tipo'] = '2'
     data['cidades_id'] = '2'
-    return filtro
+    return data
 
 @pytest.fixture
 def contato_false():
@@ -192,3 +202,33 @@ def test_deve_retornar_raises_quando_contato_valido_via_contato(args_dias_30,con
 def test_deve_retornar_seis_imoveis_quando_contato_valido(args_dias_30,contato):
     imoveis = Imoveis(args_dias_30,contato)
     assert imoveis.itens['itens']['qtde'] == 6
+
+
+def test_deve_comparar_totais_quando_enviados_contatos(args_dias_30,contato):
+    disparo = Disparos(args_dias_30)
+    contatos = [contato]
+    t = disparo.contatos(contatos)
+    totais = {'total':1,'ok':1,'error':0}
+    assert totais == disparo.totais
+
+def test_deve_comparar_totais_quando_enviados_contatos_i(args_dias_30,contato_dois_tipos,contato):
+    disparo = Disparos(args_dias_30)
+    contatos = [contato_dois_tipos,contato]
+    t = disparo.contatos(contatos)
+    totais = {'total':2,'ok':2,'error':0}
+    assert totais == disparo.totais
+
+
+def test_deve_retornar_totais_cinco_quando_teste(args_dias_30_test):
+    disparo = Disparos(args_dias_30_test)
+    disparo.set()
+    totais = {'total': 5, 'ok': 5, 'error': 0}
+    print(disparo.totais)
+    assert disparo.totais['total'] == 5
+
+# def test_deve_comparar_totais_quando_enviados_contatos_um_ok_um_erro(args_dias_30,contato_invalido,contato):
+#     disparo = Disparos(args_dias_30)
+#     contatos = [contato_dois_tipos,contato]
+#     t = disparo.contatos(contatos)
+#     totais = {'total':2,'ok':1,'error':1}
+#     assert totais == disparo.totais

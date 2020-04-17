@@ -3,7 +3,7 @@
 # Disparo de ofertas para usuarios          #
 # cadastrados nos ultimos 60 dias           #
 # Acessa RESTAPIImoveis                     #
-# Data 11.03.2020                           #
+# Data 11.03.2020 - Op: 17.04.2020          #
 # Uso,                                      #
 # tags: localhost, BasicAuth, keys, json    #
 # -verbose (debuga os passos e o tempo)     #

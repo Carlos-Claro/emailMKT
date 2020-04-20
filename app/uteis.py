@@ -75,7 +75,7 @@ class Uteis:
         if self._is_localhost():
             self.__cwd = '/var/www/python/emailMkt/app'
         else:
-            self.__cwd = '/home/python/emailMkt/app'
+            self.__cwd = '/home/python/emailMKT/app'
 
 
 

@@ -72,6 +72,11 @@ class Uteis:
         return self.__endereco
 
     def set_cwd(self):
-        self.__cwd = '/var/www/python/emailMkt/app'
+        if self._is_localhost():
+            self.__cwd = '/var/www/python/emailMkt/app'
+        else:
+            self.__cwd = '/home/python/emailMkt/app'
+
+
 
 

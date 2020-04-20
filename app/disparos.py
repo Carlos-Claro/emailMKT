@@ -500,10 +500,12 @@ class Imoveis:
     def _set_filtro(self):
         data = {}
         data['limit'] = 6
-        data['skip'] = 6
+        # data['skip'] = 6
         data['tipo'] = self.contato['tipo_negocio_item']
         data['id_tipo'] = self.contato['id_tipo_item']
         data['cidades_id'] = self.contato['cidades']
+        if self.__uteis.localhost:
+            data['integra'] = 'python'
         return data
 
     def _set_imoveis(self):

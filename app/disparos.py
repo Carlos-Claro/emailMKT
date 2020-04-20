@@ -509,7 +509,9 @@ class Imoveis:
         data = {'filtro': self._set_filtro()}
         data['url_tipo'] = 'imoveis'
         data['tipo'] = 'get'
+        print(data)
         self.__imoveis = Request(self.__uteis).request(data)
+        print(sef.__imoveis)
         if not len(self.__imoveis['itens']['itens']):
             message = 'Nenhum imovel para este id_contato: {}'.format(self.contato['id'])
             self.log_error(message)

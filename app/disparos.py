@@ -511,7 +511,7 @@ class Imoveis:
         data['tipo'] = 'get'
         print(data)
         self.__imoveis = Request(self.__uteis).request(data)
-        print(sef.__imoveis)
+        print(self.__imoveis)
         if not len(self.__imoveis['itens']['itens']):
             message = 'Nenhum imovel para este id_contato: {}'.format(self.contato['id'])
             self.log_error(message)

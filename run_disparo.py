@@ -11,7 +11,7 @@ args = Argumentos().get()
 # args['localhost'] = 1
 args['teste'] = 1
 args['dias'] = 60
-args['qtde'] = 2
+args['qtde'] = 10
 inicio = time.time()
 qtde = 0
 Disparos(args).set()

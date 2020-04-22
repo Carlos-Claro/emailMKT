@@ -17,8 +17,9 @@ class Logs:
             'erro': '/var/log/sistema/error_email_mkt.log'
         }
         formatos = {
-            'request' : '{data} - status_code {status_code} - funcao: {tipo} - qtde: {qtde} - tempo: {tempo} ',
+            'request' : '{data} - status_code {status_code} - funcao: {tipo} - qtde: {qtde} - tempo: {tempo} request',
             'request_erro': '{data} - status_code {status_code} - message {message} - erro_request ',
+            'geral': '{data} - message {message} - geral ',
             'contatos_erro': '{data} - message {message} - erro_contatos ',
             'disparos': '{data} - qtde_total: {total} - qtde_ok: {ok} - qtde_erro: {error} - funcao: disparos_totais - tempo: {tempo} ',
             'disparo': '{data} - {id} - email: {email} - status {status} - funcao: disparo_unico - tempo: {tempo} ',

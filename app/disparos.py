@@ -27,7 +27,7 @@ import smtplib
 from email.message import EmailMessage
 
 
-from app.exception import ContatosInvalido, ImoveisInvalido, EmailInvalido, CorpoInvalido
+from app.exception import ContatosInvalido, ImoveisInvalido, EmailInvalido, CorpoInvalido, ContatoInvalido
 from app.logs import Logs
 from app.uteis import Uteis
 from app.request import Request
@@ -52,6 +52,9 @@ class Disparos:
             self.contatos(contatos.itens)
         fim = time.time()
         self.log(fim-self.__inicio)
+        if contatos.set_contatos():
+            return True
+        return False
 
     def contatos(self,contatos):
         self._set_totais(len(contatos))
@@ -236,20 +239,28 @@ class Corpo_email:
             self.html_imovel = a.read()
 
     def _set_imoveis_corpo(self):
-        imoveis = []
-        for imovel in self.__imoveis['itens']:
-            campos = self._set_campos(imovel)
-            self._set_html_imovel(campos)
-            imoveis.append(self.html_imovel.format(**campos))
+        imoveis = self._set_array_imoveis()
         retorno = '<tr>'
         x = 0
         for i in imoveis:
-            retorno += '<td>{}</td>'.format(i)
             x += 1
-            if x%2 == 0:
-                retorno += '</tr><tr>'
+            retorno += self._set_item_td(x,i)
         retorno += '</tr>'
         return retorno
+
+    def _set_array_imoveis(self):
+        imoveis = []
+        for imovel in self.__imoveis['itens']:
+            campos = self._set_campos(imovel)
+            imoveis.append(self._set_html_imovel(campos))
+        return imoveis
+
+    def _set_item_td(self,x,i):
+        retorno = '<td>{}</td>'.format(i)
+        if x % 2 == 0:
+            retorno += '</tr><tr>'
+        return retorno
+
 
     def get_imoveis_corpo(self):
         try:
@@ -258,6 +269,16 @@ class Corpo_email:
             return email
         except Exception as b:
             message = 'Erro compondo imoveis html {}'.format(b)
+            self.log_error(message)
+            raise CorpoInvalido(message)
+
+    def _set_html_corpo(self, corpo_imoveis):
+        try:
+            campos = self._set_campo_corpo(corpo_imoveis)
+            b = self.html_corpo.format(**campos)
+            return b
+        except Exception as a:
+            message = 'Erro compondo corpo html {}'.format(a)
             self.log_error(message)
             raise CorpoInvalido(message)
 
@@ -271,12 +292,23 @@ class Corpo_email:
             raise ContatoInvalido(message)
 
     def _set_link(self,imovel):
-        return '{}/imovel/{tipo_negocio}-{imoveis_tipos_link}' \
+        try:
+            return '{}/imovel/{tipo_negocio}-{imoveis_tipos_link}' \
                '-{cidades_link}-{bairros_link}-{imobiliaria_nome_seo}' \
                '/{id}/e'.format(self.__cidades['itens'][self.__cidades['principal']]['portal'],**imovel)
+        except Exception as e:
+            message = 'set_link erro: {}'.format(e)
+            self.log_error(message)
+            raise ContatoInvalido(message)
 
     def _set_titulo(self,imovel):
-        return '{} {}, {}'.format(imovel['imoveis_tipos_titulo'],self._set_tipo_negocio(imovel['tipo_negocio']), imovel['bairro'])
+        try:
+            return '{} {}, {}'.format(imovel['imoveis_tipos_titulo'],self._set_tipo_negocio(imovel['tipo_negocio']), imovel['bairro'])
+        except Exception as e:
+            message = 'set_ titulo erro: {}'.format(e)
+            self.log_error(message)
+            raise ContatoInvalido(message)
+
 
     def _set_tipo_negocio(self,tipo):
         if tipo == 'venda':
@@ -300,31 +332,46 @@ class Corpo_email:
         return retorno
 
     def _set_image_principal(self, images):
-        return images[0]['arquivo']
+        try:
+            image = self._set_image(images)
+            print(image)
+            return image['arquivo']
+        except Exception as e:
+            message = 'set_ image principal erro: {}'.format(e)
+            self.log_error(message)
+            raise ContatoInvalido(message)
+
+    def _set_image(self,images):
+        if isinstance(images,dict):
+            for i in images:
+                return i
+        else:
+            return images[0]
 
     def _set_titulo_image(self, imovel):
-        if len(imovel['images'][0]['titulo']):
-            return imovel['images'][0]['titulo']
+        image = self._set_image(imovel['images'])
+        if len(image['titulo']):
+            return image['titulo']
         return self._set_titulo(imovel)
 
     def _set_link_relacionado(self, imovel):
-        return '{}/{imoveis_tipos_link}-{tipo_negocio}-{cidades_link}-{bairros_link}/'.format(
-            self.__cidades['itens'][self.__cidades['principal']]['portal'], **imovel)
+        try:
+            return '{}/{imoveis_tipos_link}-{tipo_negocio}-{cidades_link}-{bairros_link}/'.format(
+                self.__cidades['itens'][self.__cidades['principal']]['portal'], **imovel)
+        except Exception as e:
+            message = 'set link relacionado erro: {}'.format(b)
+            self.log_error(message)
+            raise ContatoInvalido(message)
 
     def _set_titulo_relacionado(self, imovel):
-        return '{} {}, {}'.format(imovel['imoveis_tipos_titulo'], self._set_tipo_negocio(imovel['tipo_negocio']),
-                                  imovel['bairro'])
-
-
-    def _set_html_corpo(self, corpo_imoveis):
         try:
-            campos = self._set_campo_corpo(corpo_imoveis)
-            b = self.html_corpo.format(**campos)
-            return b
-        except Exception as a:
-            message = 'Erro compondo corpo html {}'.format(a)
+            return '{} {}, {}'.format(imovel['imoveis_tipos_titulo'], self._set_tipo_negocio(imovel['tipo_negocio']),
+                                  imovel['bairro'])
+        except Exception as e:
+            message = 'set link relacionado erro: {}'.format(b)
             self.log_error(message)
-            raise CorpoInvalido(message)
+            raise ContatoInvalido(message)
+
 
     def _set_campo_corpo(self, imoveis):
         a = {
@@ -394,7 +441,8 @@ class Contatos:
         else:
             message = 'Nenhum contato retornado'
             self.log_error(message)
-            raise ContatosInvalido(message)
+            # raise ContatosInvalido(message)
+            return False
 
     def _get_filtro(self):
         data = {'filtro': {}}
@@ -512,9 +560,7 @@ class Imoveis:
         data = {'filtro': self._set_filtro()}
         data['url_tipo'] = 'imoveis'
         data['tipo'] = 'get'
-        print(data)
         self.__imoveis = Request(self.__uteis).request(data)
-        print(self.__imoveis)
         if not len(self.__imoveis['itens']['itens']):
             message = 'Nenhum imovel para este id_contato: {}'.format(self.contato['id'])
             self.log_error(message)

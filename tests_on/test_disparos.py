@@ -7,22 +7,20 @@ from app.exception import ContatosInvalido, ImoveisInvalido, EmailInvalido
 @pytest.fixture
 def args_dias_1():
     args = {}
-    args['localhost'] = 1
+    args['teste'] = 1
     args['dias'] = 1
     return args
 
 @pytest.fixture
 def args_dias_30():
     args = {}
-    args['localhost'] = 1
-    # args['teste'] = 1
+    args['teste'] = 1
     args['dias'] = 60
     return args
 
 @pytest.fixture
 def args_dias_30_test():
     args = {}
-    args['localhost'] = 1
     args['teste'] = 1
     args['dias'] = 60
     args['qtde'] = 5

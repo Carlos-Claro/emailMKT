@@ -9,14 +9,13 @@ from app.logs import Logs
 args = Argumentos().get()
 
 # args['localhost'] = 1
-args['teste'] = 1
+# args['teste'] = 1
 args['dias'] = 60
 args['qtde'] = 10
 inicio = time.time()
 qtde = 0
-Disparos(args).set()
-# while Disparos(args).set():
-qtde += 1
+while Disparos(args).set():
+    qtde += 1
 fim = time.time()
 tempo = fim - inicio
 data = {

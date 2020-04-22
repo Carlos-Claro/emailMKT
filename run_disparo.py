@@ -11,11 +11,12 @@ args = Argumentos().get()
 # args['localhost'] = 1
 args['teste'] = 1
 args['dias'] = 60
-args['qtde'] = 1
+args['qtde'] = 2
 inicio = time.time()
 qtde = 0
-while Disparos(args).set():
-    qtde += 1
+Disparos(args).set()
+# while Disparos(args).set():
+qtde += 1
 fim = time.time()
 tempo = fim - inicio
 data = {

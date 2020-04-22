@@ -4,6 +4,7 @@
 # cadastrados nos ultimos 60 dias           #
 # Acessa RESTAPIImoveis                     #
 # Data 11.03.2020 - Op: 17.04.2020          #
+# melhora de testes e operação: 22.04.2020  #
 # Uso,                                      #
 # tags: localhost, BasicAuth, keys, json    #
 # -verbose (debuga os passos e o tempo)     #
@@ -17,9 +18,6 @@
 
 import datetime
 import time
-import os
-import sys
-import json
 import random
 
 from email_validator import validate_email, EmailNotValidError
@@ -334,7 +332,6 @@ class Corpo_email:
     def _set_image_principal(self, images):
         try:
             image = self._set_image(images)
-            print(image)
             return image['arquivo']
         except Exception as e:
             message = 'set_ image principal erro: {}'.format(e)
